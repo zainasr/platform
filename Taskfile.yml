@@ -1,0 +1,57 @@
+version: '3'
+
+tasks:
+  help:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  go:run:
+    desc: Run Go core service locally
+    dir: services/core-go
+    cmds:
+      - go run ./cmd/server
+
+  go:build:
+    desc: Build Go binary
+    dir: services/core-go
+    cmds:
+      - go build -o bin/server ./cmd/server
+
+  go:test:
+    desc: Run Go tests
+    dir: services/core-go
+    cmds:
+      - go test ./...
+
+  docker:build:core:
+    desc: Build Docker image for Go core service
+    cmds:
+      - docker build -t core-go:local ./services/core-go
+
+  node:run:
+    desc: Run Node API locally
+    dir: services/api-node
+    cmds:
+      - npm install
+      - npm start
+
+  docker:build:node:
+    desc: Build Docker image for Node API
+    cmds:
+      - docker build -t api-node:local ./services/api-node
+    
+  compose:up:
+    desc: Start local platform using Docker Compose
+    dir: compose
+    cmds:
+      - docker compose up --build
+
+  compose:down:
+    desc: Stop local platform
+    dir: compose
+    cmds:
+      - docker compose down -v
+
+
+

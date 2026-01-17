@@ -1,0 +1,14 @@
+{
+    "name": "api-node",
+    "version": "1.0.0",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "start": "node src/server.js"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "node-fetch": "^3.3.2",
+        "prom-client": "^15.1.3"
+    }
+}

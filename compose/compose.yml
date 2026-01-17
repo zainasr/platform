@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    networks:
+      - platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  core-go:
+    build:
+      context: ../services/core-go
+    container_name: core-go
+    environment:
+      PORT: ${CORE_GO_PORT}
+      ENV: ${ENV}
+    networks:
+      - platform-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${CORE_GO_PORT}:8080"
+
+  api-node:
+    build:
+      context: ../services/api-node
+    container_name: api-node
+    environment:
+      PORT: ${API_NODE_PORT}
+      CORE_GO_BASE_URL: ${CORE_GO_BASE_URL}
+      ENV: ${ENV}
+    networks:
+      - platform-network
+    depends_on:
+      core-go:
+        condition: service_started
+    ports:
+      - "${API_NODE_PORT}:3000"
+    
+  worker-python:
+    build:
+      context: ../services/worker-python
+    container_name: worker-python
+    networks:
+      - platform-network
+    environment:
+      ENV: ${ENV}
+      METRICS_PORT: 9000
+      JOB_INTERVAL_SECONDS: 10
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: prometheus
+    networks:
+      - platform-network
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    networks:
+      - platform-network
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+networks:
+  platform-network:
+    driver: bridge

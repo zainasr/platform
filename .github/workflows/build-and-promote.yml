@@ -33,17 +33,17 @@ jobs:
           path: platform-ops
       
       - name: Update image repository and tag in Helm values
-          run: |
-            declare -A REPOS=(
-              ["core-go"]="ghcr.io/zainasr/core-go"
-              ["api-node"]="ghcr.io/zainasr/api-node"
-              ["worker-python"]="ghcr.io/zainasr/worker-python"
-            )
-            for svc in core-go api-node worker-python; do
-              values_file="platform-ops/helm/$svc/values.yaml"
-              sed -i "s|repository:.*|repository: ${REPOS[$svc]}|" "$values_file"
-              sed -i "s|tag:.*|tag: ${{ steps.vars.outputs.SHA }}|" "$values_file"
-            done
+        run: |
+          declare -A REPOS=(
+            ["core-go"]="ghcr.io/zainasr/core-go"
+            ["api-node"]="ghcr.io/zainasr/api-node"
+            ["worker-python"]="ghcr.io/zainasr/worker-python"
+          )
+          for svc in core-go api-node worker-python; do
+            values_file="platform-ops/helm/$svc/values.yaml"
+            sed -i "s|repository:.*|repository: ${REPOS[$svc]}|" "$values_file"
+            sed -i "s|tag:.*|tag: ${{ steps.vars.outputs.SHA }}|" "$values_file"
+          done
 
       - name: Commit and push to ops repo
         run: |

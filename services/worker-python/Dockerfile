@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-USER app
+USER 65532:65532
 
 ENV PYTHONUNBUFFERED=1
 

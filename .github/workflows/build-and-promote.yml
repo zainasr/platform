@@ -1,0 +1,51 @@
+name: Build and Promote
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout platform repo
+        uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: vars
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and push images
+        run: |
+          docker build -t ghcr.io/zainasr/core-go:${{ steps.vars.outputs.SHA }} services/core-go
+          docker build -t ghcr.io/zainasr/api-node:${{ steps.vars.outputs.SHA }} services/api-node
+          docker build -t ghcr.io/zainasr/worker-python:${{ steps.vars.outputs.SHA }} services/worker-python
+
+      - name: Checkout platform-ops repo
+        uses: actions/checkout@v4
+        with:
+          repository: zainasr/platform-ops
+          token: ${{ secrets.OPS_REPO_TOKEN }}
+          path: platform-ops
+      
+      - name: Update image repository and tag in Helm values
+          run: |
+            declare -A REPOS=(
+              ["core-go"]="ghcr.io/zainasr/core-go"
+              ["api-node"]="ghcr.io/zainasr/api-node"
+              ["worker-python"]="ghcr.io/zainasr/worker-python"
+            )
+            for svc in core-go api-node worker-python; do
+              values_file="platform-ops/helm/$svc/values.yaml"
+              sed -i "s|repository:.*|repository: ${REPOS[$svc]}|" "$values_file"
+              sed -i "s|tag:.*|tag: ${{ steps.vars.outputs.SHA }}|" "$values_file"
+            done
+
+      - name: Commit and push to ops repo
+        run: |
+          cd platform-ops
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit -am "chore: promote images ${{ steps.vars.outputs.SHA }}"
+          git push

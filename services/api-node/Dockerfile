@@ -10,8 +10,8 @@
     
     COPY src ./src
     
-    USER app
-    
+    USER 65532:65532
+
     EXPOSE 3000
     
     CMD ["node", "src/server.js"]

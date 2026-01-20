@@ -22,7 +22,7 @@ app.get('/metrics', async (req, res) => {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   } catch (error) {
-    res.status(500).json({ error: 'Failed to collect metrics', message: error.message });
+    res.status(500).json({ error: 'Failed tvo collect metrics', message: error.message });
   }
 });
 

@@ -1,8 +1,6 @@
 name: Build and Promote
 
-permissions:
-  contents: read
-  id-token: write
+
 on:
   push:
     branches: [ main ]
@@ -11,6 +9,10 @@ jobs:
   build-and-promote:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+      
     steps:
       - name: Checkout platform repo
         uses: actions/checkout@v4 
@@ -18,12 +20,19 @@ jobs:
       - name: Set short SHA
         id: vars
         run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+      - name: Login to GHCR
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u zainasr --password-stdin
 
       - name: Build and push images
         run: |
           docker build -t ghcr.io/zainasr/core-go:${{ steps.vars.outputs.SHA }} services/core-go
+          docker push ghcr.io/zainasr/core-go:${{ steps.vars.outputs.SHA }}
           docker build -t ghcr.io/zainasr/api-node:${{ steps.vars.outputs.SHA }} services/api-node
+          docker push ghcr.io/zainasr/api-node:${{ steps.vars.outputs.SHA }}
           docker build -t ghcr.io/zainasr/worker-python:${{ steps.vars.outputs.SHA }} services/worker-python
+          docker push ghcr.io/zainasr/worker-python:${{ steps.vars.outputs.SHA }}
 
       - name: Checkout platform-ops repo
         uses: actions/checkout@v4
@@ -34,7 +43,7 @@ jobs:
       
       - name: Update image repository and tag in Helm values
         run: |
-        
+
           declare -A REPOS=(
             ["core-go"]="ghcr.io/zainasr/core-go"
             ["api-node"]="ghcr.io/zainasr/api-node"
